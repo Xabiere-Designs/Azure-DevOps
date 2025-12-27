@@ -5,21 +5,20 @@ pool:
   vmImage: ubuntu-latest
 
 jobs:
-- job: Sonar_SAST_Scan_Job
+- job: Build_Scan
   displayName: Build + SonarCloud
   container: maven:3.8.1-openjdk-17-slim
 
   steps:
   - checkout: self
-    fetchDepth: 0   # good practice so Sonar sees full history
+    fetchDepth: 0
 
   - script: |
-      mvn -v
       mvn -B -f pom.xml clean verify \
         org.sonarsource.scanner.maven:sonar-maven-plugin:3.10.0.2594:sonar \
         -Dsonar.host.url=https://sonarcloud.io \
         -Dsonar.organization=xabiere-designs \
         -Dsonar.projectKey=Xabiere-Designs_Azure-DevOps \
-        -Dsonar.token=$(SONAR_TOKEN)
-    workingDirectory: $(System.DefaultWorkingDirectory)
+        -Dsonar.token=$(SONAR_TOKEN) \
+        -Dsonar.branch.name=$(Build.SourceBranchName)
     displayName: Build + Test + Sonar (Maven)
