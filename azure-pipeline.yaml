@@ -1,12 +1,13 @@
 trigger:
-  - main
+- main
 
 pool:
   vmImage: ubuntu-latest
 
-steps:
-  - script: mvn clean package
-    displayName: "Building Azure DevOps App"
-
-  - script: mvn clean test
-    displayName: "Testing Azure DevOps App"
+jobs:
+- job: Sonar_SAST_Scan_Job
+  container: maven:3.8.1-openjdk-17-slim
+  steps:
+  - script: |
+      mvn verify package sonar:sonar -Dsonar.host.url=https://sonarcloud.io/ -Dsonar.organization=xabiere-designs -Dsonar.projectKey=Xabiere-Designs_Azure-DevOps -Dsonar.token=69381ac596575b5ed5603b7a2a0b75c9d2eb3637
+    displayName: "Integrate SAST using SonarCloud to populate code coverage and secure pipeline variable in Azure DevOps DevSecOps Pipeline"
