@@ -4,10 +4,56 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
+# Set your Sonar basics here (kept as regular vars; token is secret)
+variables:
+  SONAR_HOST_URL: https://sonarcloud.io
+  SONAR_ORG: xabiere-designs
+  SONAR_PROJECT_KEY: Xabiere-Designs_Azure-DevOps
+
 jobs:
 - job: Sonar_SAST_Scan_Job
-  container: maven:3.8.1-openjdk-17-slim
+  displayName: "SAST (SonarCloud) - Maven"
+  # Use a Maven+JDK17 container so mvn & Java are consistent
+  container: maven:3.9.6-eclipse-temurin-17
   steps:
-  - script: |
-      mvn verify package sonar:sonar -Dsonar.host.url=https://sonarcloud.io/ -Dsonar.organization=xabiere-designs -Dsonar.projectKey=Xabiere-Designs_Azure-DevOps -Dsonar.token=69381ac596575b5ed5603b7a2a0b75c9d2eb3637
-    displayName: "Integrate SAST using SonarCloud to populate code coverage and secure pipeline variable in Azure DevOps DevSecOps Pipeline"
+    # Make sure repo is checked out (explicit for clarity)
+    - checkout: self
+      fetchDepth: 0
+
+    # Auto-detect the folder that contains pom.xml (max depth 3 from repo root)
+    - script: |
+        set -euo pipefail
+        ROOT="$(Build.SourcesDirectory)"
+        POM_PATH="$(find "$ROOT" -maxdepth 3 -name pom.xml | head -n 1 || true)"
+        if [ -z "$POM_PATH" ]; then
+          echo "❌ No pom.xml found within 3 levels of $ROOT"
+          echo "   If your pom.xml is deeper, either move it or raise the search depth."
+          exit 1
+        fi
+        POM_DIR="$(dirname "$POM_PATH")"
+        echo "✅ Found pom.xml at: $POM_PATH"
+        echo "##vso[task.setvariable variable=POM_DIR;isOutput=false]$POM_DIR"
+      displayName: "Detect pom.xml location"
+
+    # Speed up builds by caching the Maven repo
+    - task: Cache@2
+      displayName: "Cache ~/.m2"
+      inputs:
+        key: 'maven | "$(Agent.OS)" | **/pom.xml'
+        restoreKeys: 'maven | "$(Agent.OS)"'
+        path: ~/.m2/repository
+
+    # Run build + Sonar analysis using fully-qualified plugin goal (avoids prefix errors)
+    - script: |
+        set -euo pipefail
+        cd "$(POM_DIR)"
+        mvn -B verify \
+          org.sonarsource.scanner.maven:sonar-maven-plugin:3.10.0.2594:sonar \
+          -Dsonar.host.url=$(SONAR_HOST_URL) \
+          -Dsonar.organization=$(SONAR_ORG) \
+          -Dsonar.projectKey=$(SONAR_PROJECT_KEY) \
+          -Dsonar.token=$(SONAR_TOKEN)
+      displayName: "Integrate SAST using SonarCloud (verify + sonar)"
+      env:
+        # Read the secret safely from pipeline variables
+        SONAR_TOKEN: $(SONAR_TOKEN)
