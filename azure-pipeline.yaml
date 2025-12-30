@@ -5,17 +5,14 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-- group: "SECURE_TOKENS"
-- name: snyk_token
-  value: $(SNYKTOKEN)
+- group: SECURE_TOKENS   # contains SNYK_TOKEN (secret)
 
 steps:
 - script: |
-    snyk_token=$(SNYKTOKEN) 
-    export SNYK_TOKEN
-    mvn snyk:test -fn
-  displayName: "Integrate SCA using Snyk in AZURE DevOps DevSecOps Pipeline" 
+    mvn -B \
+      io.snyk:snyk-maven-plugin:2.0.0:test \
+      -Dsnyk.organization="xabiere-designs" \
+      -DfailOnSeverity=high
+  displayName: "Snyk SCA scan (Maven)"
   env:
-    # map ADO secrets to env vars Snyk/Maven plugin reads
-    SNYK_TOKEN: $(SNYKTOKEN)
-    SNYK_ORG:   $(SNYK_ORG)
+    SNYK_TOKEN: $(SNYK_TOKEN)   # provided by your variable group
