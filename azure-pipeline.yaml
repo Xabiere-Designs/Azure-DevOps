@@ -5,19 +5,17 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-- group: SECURE_TOKENS     # must contain a secret named SNYKTOKEN
+- group: "SECURE_TOKENS"
 - name: snyk_token
-  value: $[variables.SNYKTOKEN]   # compile-time expansion -> creates $(snyk_token)
+  value: $(SNYKTOKEN)
 
 steps:
 - script: |
-    # Export token so the plugin/CLI sees it
-    SNYK_TOKEN="$(snyk_token)"
+    snyk_token=$(SNYKTOKEN) 
     export SNYK_TOKEN
-
-    # Run Snyk via the Maven plugin (works with your pom.xml)
-    mvn -B io.snyk:snyk-maven-plugin:2.0.0:test \
-      -Dsnyk.organization="xabiere-designs" \
-      -DfailOnSeverity=high \
-      -fn
-  displayName: "Integrate SCA scan using Snyk in ADO DevSecOps Pipeline"
+    mvn snyk:test -fn
+  displayName: "Integrate SCA using Snyk in AZURE DevOps DevSecOps Pipeline" 
+  env:
+    # map ADO secrets to env vars Snyk/Maven plugin reads
+    SNYK_TOKEN: $(SNYKTOKEN)
+    SNYK_ORG:   $(SNYK_ORG)
