@@ -4,21 +4,14 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-jobs:
-- job: Build_Scan
-  displayName: Build + SonarCloud
-  container: maven:3.8.1-openjdk-17-slim
+variables:
+- group: "SECURE_TOKENS"
+- name: snyk_token
+  value: $(SNYKTOKEN)
 
-  steps:
-  - checkout: self
-    fetchDepth: 0
-
-  - script: |
-      mvn -B -f pom.xml clean verify \
-        org.sonarsource.scanner.maven:sonar-maven-plugin:3.10.0.2594:sonar \
-        -Dsonar.host.url=https://sonarcloud.io \
-        -Dsonar.organization=xabiere-designs \
-        -Dsonar.projectKey=Xabiere-Designs_Azure-DevOps \
-        -Dsonar.token=$(SONAR_TOKEN) \
-        -Dsonar.branch.name=$(Build.SourceBranchName)
-    displayName: Build + Test + Sonar (Maven)
+steps:
+- script: |
+    SNYK_TOKEN=$(snyk_token) 
+    export SNYK_TOKEN
+    mvn snyk:test -fn
+  displayName: "Integrate SCA using Snyk in ADO DevSecOps Pipeline" 
