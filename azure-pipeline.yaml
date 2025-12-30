@@ -11,7 +11,7 @@ variables:
 
 steps:
 - script: |
-    SNYK_TOKEN=$(SNYKTOKEN) 
+    snyk_token=$(SNYKTOKEN) 
     export SNYK_TOKEN
     mvn snyk:test -fn
   displayName: "Integrate SCA using Snyk in AZURE DevOps DevSecOps Pipeline" 
