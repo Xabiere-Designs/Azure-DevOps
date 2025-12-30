@@ -5,30 +5,17 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-- group: SECURE_TOKENS  # SNYKTOKEN, SNYK_ORG
+- group: "SECURE_TOKENS"
+- name: snyk_token
+  value: $(SNYKTOKEN)
 
 steps:
-- bash: |
-    set -euo pipefail
-
-    # Quick sanity checks so we fail fast if secrets don't flow
-    [ -n "${SNYKTOKEN:-}" ] || { echo "Missing SNYKTOKEN"; exit 1; }
-    [ -n "${SNYK_ORG:-}" ]  || { echo "Missing SNYK_ORG";  exit 1; }
-
-    # Install Snyk CLI
-    curl -sL https://static.snyk.io/cli/latest/snyk-linux -o snyk
-    chmod +x snyk && sudo mv snyk /usr/local/bin/snyk
-    snyk --version
-
-    # Authenticate the CLI (401s disappear here if token is valid)
-    snyk auth "$SNYKTOKEN"
-
-    # Run the Maven plugin and pass org+token explicitly
-    mvn -B io.snyk:snyk-maven-plugin:2.0.0:test \
-       -Dsnyk.token="$SNYKTOKEN" \
-       -Dsnyk.organization="$SNYK_ORG" \
-       -DfailOnSeverity=high
-  displayName: "Integrate SCA using Snyk (Maven)"
+- script: |
+    snyk_token=$(SNYKTOKEN) 
+    export SNYK_TOKEN
+    mvn snyk:test -fn
+  displayName: "Integrate SCA using Snyk in AZURE DevOps DevSecOps Pipeline" 
   env:
-    SNYKTOKEN: $(SNYKTOKEN)
-    SNYK_ORG:  $(SNYK_ORG)
+    # map ADO secrets to env vars Snyk/Maven plugin reads
+    SNYK_TOKEN: $(SNYKTOKEN)
+    SNYK_ORG:   $(SNYK_ORG)
