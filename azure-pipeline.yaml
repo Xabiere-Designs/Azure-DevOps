@@ -14,7 +14,7 @@ steps:
     snyk_token=$(SNYKTOKEN) 
     export SNYK_TOKEN
     mvn snyk:test -fn
-  displayName: "Integrate SCA using Snyk in ADO DevSecOps Pipeline" 
+  displayName: "Integrate SCA using Snyk in AZURE DevOps DevSecOps Pipeline" 
   env:
     # map ADO secrets to env vars Snyk/Maven plugin reads
     SNYK_TOKEN: $(SNYKTOKEN)
